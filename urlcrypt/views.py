@@ -14,14 +14,15 @@ def rate_limit(num=60):
     """
     def decorator(func):
         def wrapper(request, *args, **kwargs):
-            cache_key = 'rate_limit.%s' % request.session._session_key
-            added = cache.add(cache_key, 1, timeout=60)
-            if added:
-                num_tries = 1
-            else:
-                num_tries = cache.incr(cache_key, delta=1)
-            if num_tries > num:
-                raise HttpResponseForbidden("Rate Limit Exceeded")
+            if num >= 0: # A negative value disables rate limiting
+                cache_key = 'rate_limit.%s' % request.session._session_key
+                added = cache.add(cache_key, 1, timeout=60)
+                if added:
+                    num_tries = 1
+                else:
+                    num_tries = cache.incr(cache_key, delta=1)
+                if num_tries > num:
+                    raise HttpResponseForbidden("Rate Limit Exceeded")
             return func(request, *args, **kwargs)
         return wrapper
     return decorator
